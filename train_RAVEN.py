@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torchvision.datasets import ImageFolder, MNIST
 from torchvision import transforms
+import pickle as pkl
 import numpy as np
 from collections import OrderedDict
 from PIL import Image
@@ -26,6 +27,8 @@ from time import time
 import argparse
 import logging
 import os
+import re
+import datetime
 
 from models import DiT_models, DiT
 from diffusion import create_diffusion
@@ -206,6 +209,19 @@ DiT_configs = {
     # "DiT_S_8": {"depth": 12, "hidden_size": 384, "patch_size": 8, "num_heads": 6},
 }
 
+def get_max_index(folder_path):
+    import re
+    indexes = []
+    for item in os.listdir(folder_path):
+        match = re.match(r"(\d+)-", item)
+        if match:
+            index = int(match.group(1))
+            indexes.append(index)
+    if indexes:
+        return max(indexes)
+    else:
+        return 0
+    
 #################################################################################
 #                                  Training Loop                                #
 #################################################################################
@@ -233,15 +249,23 @@ def main(args):
     # Setup an experiment folder:
     if rank == 0:
         os.makedirs(args.results_dir, exist_ok=True)  # Make results folder (holds all experiment subfolders)
-        experiment_index = len(glob(f"{args.results_dir}/*"))
+        # experiment_index = len(glob(f"{args.results_dir}/*"))
+        experiment_index = get_max_index(args.results_dir) + 1
+        run_id = datetime.now().strftime("%Y%m%d-%H%M")
         model_string_name = args.model.replace("/", "-")  # e.g., DiT-XL/2 --> DiT-XL-2 (for naming folders)
-        experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{args.dataset}-{model_string_name}"  # Create an experiment folder
+        experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{args.dataset}-{'cond' if args.cond else 'uncond'}-{model_string_name}_{run_id}"  # Create an experiment folder
         checkpoint_dir = f"{experiment_dir}/checkpoints"  # Stores saved model checkpoints
         samples_dir = f"{experiment_dir}/samples"  # Stores generated samples
         os.makedirs(checkpoint_dir, exist_ok=True)
         os.makedirs(samples_dir, exist_ok=True)
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory created at {experiment_dir}")
+        # log all args
+        logger.info(f"Args: {args}")
+        # dump args
+        import json
+        with open(f'{experiment_dir}/args.json', 'w') as f:
+            json.dump(args.__dict__, f, indent=2)
     else:
         logger = create_logger(None)
 
@@ -250,8 +274,15 @@ def main(args):
     latent_size = args.image_size #  // 8
     model_cfg = DiT_configs[args.model]
     class_dropout_prob = args.class_dropout_prob # default 1.0, unconditional model
+    is_conditional = args.cond
+    if is_conditional:
+        num_classes = args.num_classes
+    else: # unconditional
+        num_classes = 0
+        class_dropout_prob = 1.0
     if args.dataset == 'RAVEN10_abstract':
         dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu')
+        pkl.dump(dataset.dict(), open(f'{experiment_dir}/dataset_idx.pkl', 'wb'))
         print("Normalization", dataset.Xmean, dataset.Xstd)
         classes = []
         model = DiT(input_size=9,
@@ -259,10 +290,11 @@ def main(args):
             # patch_size=1, depth=12, hidden_size=384, num_heads=6,
             mlp_ratio=4.0,
             class_dropout_prob=class_dropout_prob,
-            num_classes=35,
+            num_classes=num_classes,
             learn_sigma=True,)
     elif args.dataset == 'RAVEN10_abstract_onehot':
         dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu', onehot=True)
+        pkl.dump(dataset.dict(), open(f'{experiment_dir}/dataset_idx.pkl', 'wb'))
         print("Normalization", dataset.Xmean, dataset.Xstd)
         classes = []
         model = DiT(input_size=9,
@@ -270,7 +302,7 @@ def main(args):
             # patch_size=1, depth=12, hidden_size=384, num_heads=6,
             mlp_ratio=4.0,
             class_dropout_prob=class_dropout_prob,
-            num_classes=35,
+            num_classes=num_classes,
             learn_sigma=True,)
     elif args.dataset == 'MNIST':
         transform = transforms.Compose([
@@ -285,7 +317,7 @@ def main(args):
             # patch_size=4, depth=12, hidden_size=384, num_heads=6,
             mlp_ratio=4.0,
             class_dropout_prob=class_dropout_prob,
-            num_classes=10,
+            num_classes=num_classes,
             learn_sigma=True,)
     else:
         raise NotImplementedError(f'dataset {args.dataset} not implemented')
@@ -320,7 +352,8 @@ def main(args):
     loader = DataLoader(
         dataset,
         batch_size=args.global_batch_size, #int(args.global_batch_size // dist.get_world_size()),
-        shuffle=False,
+        # shuffle=False,
+        shuffle=True,
         # sampler=sampler,
         num_workers=args.num_workers,
         pin_memory=True,
@@ -345,7 +378,10 @@ def main(args):
         logger.info(f"Beginning epoch {epoch}...")
         for x, y in loader:
             x = x.to(device)
-            y = y.to(device)
+            if is_conditional:
+                y = y.to(device)
+            else:
+                y = torch.zeros_like(y).to(device)
             t = torch.randint(0, diffusion.num_timesteps, (x.shape[0],), device=device)
             model_kwargs = dict(y=y)
             loss_dict = diffusion.training_losses(model, x, t, model_kwargs)
@@ -392,7 +428,10 @@ def main(args):
             if train_steps % args.save_samples_every == 0 : # and train_steps > 0:
                 if rank == 0:
                     model.eval() 
-                    y = torch.randint(0, args.num_classes, (args.num_eval_sample,), device=device)
+                    if is_conditional:# conditional case
+                        y = torch.randint(0, args.num_classes, (args.num_eval_sample,), device=device)
+                    else:# unconditional case
+                        y = args.num_classes * torch.ones((args.num_eval_sample,), dtype=torch.int, device=device)
                     model_kwargs = dict(y=y)
                     # Sample images:
                     z = torch.randn(args.num_eval_sample, model.in_channels, latent_size, latent_size, device=device)
@@ -428,7 +467,10 @@ def main(args):
         logger.info(f"Saved checkpoint to {checkpoint_path}")
         
         model.eval() 
-        y = torch.randint(0, args.num_classes, (args.num_eval_sample,), device=device)
+        if is_conditional:# conditional case
+            y = torch.randint(0, args.num_classes, (args.num_eval_sample,), device=device)
+        else:# unconditional case
+            y = args.num_classes * torch.ones((args.num_eval_sample,), dtype=torch.int, device=device)
         model_kwargs = dict(y=y)
         # Sample images:
         z = torch.randn(args.num_eval_sample, model.in_channels, latent_size, latent_size, device=device)
@@ -454,7 +496,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=str, choices=["RAVEN10_abstract", "RAVEN10_abstract_onehot", "MNIST"], default="RAVEN10_abstract")
     parser.add_argument("--data-path", type=str, required=True)
-    parser.add_argument("--results-dir", type=str, default="results")
+    parser.add_argument("--results-dir", type=str, default="/n/holylfs06/LABS/kempner_fellow_binxuwang/Users/binxuwang/DL_Projects/DiT/results")
     # parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
     parser.add_argument("--model", type=str, choices=list(DiT_configs.keys()), default="DiT_L_1")
     parser.add_argument("--image-size", type=int, choices=[32, 9], default=256)
@@ -471,6 +513,11 @@ if __name__ == "__main__":
     parser.add_argument("--eval_sampler", type=str, default="ddim100")
     parser.add_argument("--cmb_per_class", type=int, default=3333)
     parser.add_argument("--class_dropout_prob", type=float, default=1.0)
+    # add conditional flag
+    parser.add_argument("--cond", action="store_true")
     
     args = parser.parse_args()
+    if args.cond:
+        args.num_classes = 0
+        args.class_dropout_prob = 1.0
     main(args)
