@@ -28,7 +28,7 @@ import argparse
 import logging
 import os
 import re
-import datetime
+from datetime import datetime
 
 from models import DiT_models, DiT
 from diffusion import create_diffusion
