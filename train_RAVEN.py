@@ -517,7 +517,7 @@ if __name__ == "__main__":
     parser.add_argument("--cond", action="store_true")
     
     args = parser.parse_args()
-    if args.cond:
+    if not args.cond:
         args.num_classes = 0
         args.class_dropout_prob = 1.0
     main(args)
