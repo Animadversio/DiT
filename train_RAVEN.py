@@ -28,6 +28,7 @@ import argparse
 import logging
 import os
 import re
+import json
 from datetime import datetime
 
 from models import DiT_models, DiT
@@ -154,7 +155,7 @@ class dataset_PGM_abstract(Dataset):
         n_classes = train_attrs.shape[0] # 35
         n_samples = train_attrs.shape[1] # 10k
         self.labels = torch.arange(0, n_classes).unsqueeze(1).expand(n_classes, n_samples)
-        train_attrs = train_attrs.to(int)
+        train_attrs = train_attrs.to(torch.int32)
         self.train_row_img = einops.rearrange(train_attrs, 'c s pnl (H W) attr -> c s attr H (pnl W)', H=3, W=3, attr=3, pnl=3)
         self.X, self.y, self.row_ids = _sample_panels(self.train_row_img, cmb_per_class)
         self.X = self.X.to(device) # [35 * cmb_per_class, 3, 9, 9]
@@ -263,7 +264,6 @@ def main(args):
         # log all args
         logger.info(f"Args: {args}")
         # dump args
-        import json
         with open(f'{experiment_dir}/args.json', 'w') as f:
             json.dump(args.__dict__, f, indent=2)
     else:
@@ -280,8 +280,11 @@ def main(args):
     else: # unconditional
         num_classes = 0
         class_dropout_prob = 1.0
+    # load train_attrs
+    train_attr_fn = args.train_attr_fn 
+    train_attrs = torch.load(f'/n/home12/binxuwang/Github/DiffusionReasoning/{train_attr_fn}') # [35, 10000, 3, 9, 3]
     if args.dataset == 'RAVEN10_abstract':
-        dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu')
+        dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu', train_attrs=train_attrs)
         pkl.dump(dataset.dict(), open(f'{experiment_dir}/dataset_idx.pkl', 'wb'))
         print("Normalization", dataset.Xmean, dataset.Xstd)
         classes = []
@@ -293,7 +296,7 @@ def main(args):
             num_classes=num_classes,
             learn_sigma=True,)
     elif args.dataset == 'RAVEN10_abstract_onehot':
-        dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu', onehot=True)
+        dataset = dataset_PGM_abstract(cmb_per_class=args.cmb_per_class, device='cpu', onehot=True, train_attrs=train_attrs)
         pkl.dump(dataset.dict(), open(f'{experiment_dir}/dataset_idx.pkl', 'wb'))
         print("Normalization", dataset.Xmean, dataset.Xstd)
         classes = []
@@ -425,7 +428,7 @@ def main(args):
                 # dist.barrier()
             
             # save samples 
-            if train_steps % args.save_samples_every == 0 : # and train_steps > 0:
+            if train_steps % args.save_samples_every == 0 or (train_steps == 1):
                 if rank == 0:
                     model.eval() 
                     if is_conditional:# conditional case
@@ -515,6 +518,7 @@ if __name__ == "__main__":
     parser.add_argument("--class_dropout_prob", type=float, default=1.0)
     # add conditional flag
     parser.add_argument("--cond", action="store_true")
+    parser.add_argument("--train_attr_fn", type=str, default="train_inputs.pt") # "train_inputs_new.pt"
     
     args = parser.parse_args()
     if not args.cond:
