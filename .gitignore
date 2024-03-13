@@ -2,3 +2,4 @@
 results/*
 *.err
 *.out
+cluster_logs/*
