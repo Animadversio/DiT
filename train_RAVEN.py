@@ -478,7 +478,7 @@ def main(args):
         # Sample images:
         z = torch.randn(args.num_eval_sample, model.in_channels, latent_size, latent_size, device=device)
         with torch.no_grad():
-            samples = diffusion.p_sample_loop(
+            samples = diffusion_eval.ddim_sample_loop(
                 model.forward, z.shape, z, clip_denoised=False, model_kwargs=model_kwargs, progress=False, device=device
             )
         model.train() 
