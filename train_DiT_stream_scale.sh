@@ -23,6 +23,10 @@ param_list=\
 --expname stream16M_heldout0   --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37  
 --expname stream1_6M_heldout0  --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class  40000  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37  
 --expname stream0_16M_heldout0 --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37 
+--expname stream0_016M --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0   
+--expname stream0_016M --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0
+--expname stream0_016M_heldout0 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
+--expname stream0_016M_heldout0 --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
 '
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  

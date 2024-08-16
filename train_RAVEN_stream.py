@@ -515,11 +515,11 @@ def main(args):
                 writer.add_scalar('Rules/c2', c2_cnt / total, train_steps)
                 writer.add_scalar('Rules/anyvalid', anyvalid_cnt / total / 3, train_steps)
                 if c3_cnt > 0:
-                    writer.add_histogram('Rules/c3_vec', c3_vec, train_steps)
+                    writer.add_histogram('Rules/c3_vec', c3_vec, train_steps, bins=range(41))
                 if c2_cnt > 0:
-                    writer.add_histogram('Rules/c2_vec', c2_vec, train_steps)
+                    writer.add_histogram('Rules/c2_vec', c2_vec, train_steps, bins=range(41))
                 if anyvalid_cnt > 0:
-                    writer.add_histogram('Rules/rule_vec', rule_vec, train_steps)
+                    writer.add_histogram('Rules/rule_vec', rule_vec, train_steps, bins=range(41))
 
             # dist.barrier()
             # online evaluation and save tensorboard. 
