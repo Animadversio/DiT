@@ -2,9 +2,9 @@
 #SBATCH -t 20:00:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p kempner_h100          # Partition to submit to
 #SBATCH -c 16               # Number of cores (-c)
-#SBATCH --mem=50G           # Memory pool for all cores (see also --mem-per-cpu)
+#SBATCH --mem=60G           # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH --gres=gpu:1
-#SBATCH --array 7-12
+#SBATCH --array 13-24
 #SBATCH -o /n/home12/binxuwang/Github/DiT/cluster_logs/DiT_heldout_incr_RAVEN_%A_%a.out  # File to which STDOUT will be written, %j inserts jobid
 #SBATCH -e /n/home12/binxuwang/Github/DiT/cluster_logs/DiT_heldout_incr_RAVEN_%A_%a.err  # File to which STDERR will be written, %j inserts jobid
 #SBATCH --mail-user=binxu_wang@hms.harvard.edu
@@ -23,6 +23,18 @@ param_list=\
 --expname stream0_16M_heldout_rel3     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  3 13 23 33 
 --expname stream0_16M_heldout_rel5     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  5 15 25 35 
 --expname stream0_16M_heldout_rel8     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  8 18 28 38 
+--expname stream0_16M_heldout_rel56     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  5 15 25 35  6 16 26 36
+--expname stream0_16M_heldout_rel1234   --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  1 11 21 31  2 12 22 32  3 13 23 33  4 14 24 34 
+--expname stream0_16M_heldout_rel789     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  7 17 27 37  8 18 28 38  9 19 29 39
+--expname stream0_16M_heldout_rel012     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  1 11 21 31  2 12 22 32
+--expname stream0_16M_heldout_rel034     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  3 13 23 33  4 14 24 34
+--expname stream0_16M_heldout_rel014     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  1 11 21 31  4 14 24 34
+--expname stream0_16M_heldout_rel023     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  2 12 22 32  3 13 23 33
+--expname stream0_16M_heldout_rel123     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  1 11 21 31  2 12 22 32  3 13 23 33
+--expname stream0_16M_heldout_rel234     --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  2 12 22 32  3 13 23 33  4 14 24 34
+--expname stream0_16M_heldout_rel01234   --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  1 11 21 31  2 12 22 32  3 13 23 33  4 14 24 34
+--expname stream0_16M_heldout_rel56789   --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  5 15 25 35  6 16 26 36  7 17 27 37  8 18 28 38  9 19 29 39
+--expname stream0_16M_heldout_rel0123456 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   4000  --num-classes 0  --class_dropout_prob 1.0    --heldout_ids  0 10 20 30  1 11 21 31  2 12 22 32  3 13 23 33  4 14 24 34  5 15 25 35  6 16 26 36
 '
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  
