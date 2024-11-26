@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH -t 42:00:00          # Runtime in D-HH:MM, minimum of 10 minutes
+#SBATCH -t 25:00:00          # Runtime in D-HH:MM, minimum of 10 minutes
 #SBATCH -p kempner_h100          # Partition to submit to
 #SBATCH -c 16               # Number of cores (-c)
 #SBATCH --mem=80G           # Memory pool for all cores (see also --mem-per-cpu)
 #SBATCH --gres=gpu:1
-#SBATCH --array 14,16 
-#SBATCH -o DiT_stream_RAVEN_%A_%a.out  # File to which STDOUT will be written, %j inserts jobid
-#SBATCH -e DiT_split_RAVEN_%A_%a.err  # File to which STDERR will be written, %j inserts jobid
+#SBATCH --array 17-19
+#SBATCH -o /n/home12/binxuwang/Github/DiT/cluster_logs/DiT_stream_RAVEN_%A_%a.out  # File to which STDOUT will be written, %j inserts jobid
+#SBATCH -e /n/home12/binxuwang/Github/DiT/cluster_logs/DiT_stream_RAVEN_%A_%a.err  # File to which STDERR will be written, %j inserts jobid
 #SBATCH --mail-user=binxu_wang@hms.harvard.edu
 
 echo "$SLURM_ARRAY_TASK_ID"
@@ -27,6 +27,9 @@ param_list=\
 --expname stream0_016M --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0
 --expname stream0_016M_heldout0 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
 --expname stream0_016M_heldout0 --model DiT_B_1 --dataset RAVEN10_abstract  --cmb_per_class   400  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
+--expname stream0_04M_heldout0 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   1000  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
+--expname stream0_004M_heldout0 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   100  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
+--expname stream0_0016M_heldout0 --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class   40  --num-classes 0  --class_dropout_prob 1.0  --heldout_ids 1  16  20  34  37
 '
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  
 # --model DiT_S_1 --dataset RAVEN10_abstract  --cmb_per_class 400000  --num-classes 0  --class_dropout_prob 1.0    --epochs 2000 --global-batch-size 256  
